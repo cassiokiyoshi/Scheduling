@@ -4,7 +4,7 @@ A local Streamlit app that turns employee availability into a hostel rota.
 
 ## Current scheduling assumptions
 
-- Front (10:00–19:00): one part-timer, otherwise Zac (manager).
+- Front (10:00–19:00): one part-timer, otherwise manager.
 - Cleaning (10:00–15:00): preferably two part-timers; one is accepted and no
   assignment is created when nobody is available.
 - Night (19:00–10:00 the next morning): one part-timer, otherwise Zac.
