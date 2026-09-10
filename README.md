@@ -7,12 +7,12 @@ A local Streamlit app that turns employee availability into a hostel rota.
 - Front (10:00–19:00): one part-timer, otherwise manager.
 - Cleaning (10:00–15:00): preferably two part-timers; one is accepted and no
   assignment is created when nobody is available.
-- Night (19:00–10:00 the next morning): one part-timer, otherwise Zac.
+- Night (19:00–10:00 the next morning): one part-timer, otherwise Manager.
 - A Night shift belongs to the date on which it starts.
 - A person receives at most one shift starting on the same date.
 - Mandatory Night and Front roles are filled before Cleaning.
 - Assignments are balanced by giving preference to people with fewer shifts.
-- Zac receives at least 21 Front or Night shifts per month. For a shorter
+- Manager receives at least 21 Front or Night shifts per month. For a shorter
   selected date range with fewer than 21 required shifts, all available required
   shifts are assigned to the Manager.
 - The app automatically selects at most two cleaners. A third can be added in the
