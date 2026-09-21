@@ -1,9 +1,10 @@
-"""Availability CSV importers, including the current DEN Google Form layout."""
+"""Availability CSV and XLSX importers, including the DEN Google Form layout."""
 
 import csv
 import re
 import io
 from datetime import date, datetime
+from openpyxl import load_workbook
 
 from scheduler import Availability, POSITIONS
 
@@ -12,9 +13,26 @@ def _read_rows(uploaded_file):
     if hasattr(uploaded_file, "seek"):
         uploaded_file.seek(0)
     content = uploaded_file.read()
+    if isinstance(content, bytes) and content.startswith(b"PK"):
+        workbook = load_workbook(io.BytesIO(content), read_only=True, data_only=True)
+        try:
+            for sheet in workbook.worksheets:
+                rows = _rows_with_headers([
+                    [value if value is not None else "" for value in row]
+                    for row in sheet.iter_rows(values_only=True)
+                ])
+                if rows:
+                    return rows
+            raise ValueError("No availability table found in the Excel workbook.")
+        finally:
+            workbook.close()
     if isinstance(content, bytes):
         content = content.decode("utf-8-sig")
     raw_rows = list(csv.reader(io.StringIO(content)))
+    return _rows_with_headers(raw_rows)
+
+
+def _rows_with_headers(raw_rows):
     header_index = None
     for index, row in enumerate(raw_rows):
         normalized = {str(value).strip().casefold() for value in row}
@@ -62,6 +80,10 @@ def _month_number(value):
 
 
 def _parse_date(value):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
     value = value.strip()
     try:
         return date.fromisoformat(value)
@@ -91,7 +113,7 @@ def parse_availability(uploaded_file, schedule_start: date) -> list:
                 raise ValueError(f"Row {row_number}: invalid position")
             if not employee:
                 raise ValueError(f"Row {row_number}: employee is empty")
-            records.add(Availability(employee, _parse_date(str(row[normalized["date"]] or "")), position_lookup[raw_position]))
+            records.add(Availability(employee, _parse_date(row[normalized["date"]] or ""), position_lookup[raw_position]))
         return list(records)
 
     name_column = normalized.get("name") or normalized.get("employee")

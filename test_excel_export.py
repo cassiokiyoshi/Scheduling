@@ -1,14 +1,24 @@
 import unittest
 from datetime import date
 from io import BytesIO
+from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 
-from excel_export import read_schedule_workbook, update_schedule_workbook
+from excel_export import read_schedule_workbook, update_schedule_workbook, schedule_calendar_xlsx
 from scheduler import Assignment, MANAGER
 
 
 class ExcelExportTests(unittest.TestCase):
+    def test_default_calendar_is_real_excel(self):
+        day = date(2026, 10, 1)
+        output = schedule_calendar_xlsx(
+            Path(__file__).with_name("2026 DEN shift - 26.09.csv").read_bytes(),
+            [Assignment(day, "Front", "Alex"), Assignment(day, "Night", MANAGER)], day)
+        book = load_workbook(BytesIO(output))
+        self.assertEqual(book["26.10"]["E3"].value, "Alex")
+        self.assertEqual(book["26.10"]["E10"].value, MANAGER)
+
     def test_updates_only_primary_shift_cells(self):
         book = Workbook()
         sheet = book.active
@@ -17,6 +27,7 @@ class ExcelExportTests(unittest.TestCase):
         sheet["A2"] = "front 10-19"
         sheet["A3"] = "front help"
         sheet["B3"] = "Keep me"
+        sheet["J3"] = '=COUNTIF(B2:H2,"Alex")'
         sheet["A4"] = "memo"
         sheet["B4"] = "Keep memo"
         sheet["A5"] = "Clean A"
@@ -44,6 +55,8 @@ class ExcelExportTests(unittest.TestCase):
         self.assertEqual(updated["B6"].value, "Morgan")
         self.assertEqual(updated["B8"].value, "Taylor")
         self.assertEqual(updated["B3"].value, "Keep me")
+        self.assertEqual(updated["J3"].value, '=COUNTIF(B2:H2,"Alex")')
+        self.assertEqual(updated["J3"].data_type, "f")
         self.assertEqual(updated["B4"].value, "Keep memo")
         self.assertEqual(updated["B7"].value, "Keep helper")
 

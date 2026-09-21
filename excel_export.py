@@ -3,11 +3,45 @@
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from io import BytesIO
+from io import StringIO
+import csv
 import re
 
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+from csv_export import schedule_calendar_csv
 
 from scheduler import Assignment
+
+
+def csv_workbook(template_bytes, sheet_name):
+    """Convert a CSV layout to a real workbook, retaining any formula text."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = sheet_name
+    for row in csv.reader(StringIO(template_bytes.decode("utf-8-sig"))):
+        sheet.append(row)
+    for cells in sheet.iter_rows():
+        for cell in cells:
+            cell.alignment = Alignment(vertical="top", wrap_text=True)
+    for column in range(1, sheet.max_column + 1):
+        sheet.column_dimensions[get_column_letter(column)].width = 20
+    sheet.column_dimensions["A"].width = 24
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+    sheet.freeze_panes = "B2"
+    output = BytesIO()
+    workbook.save(output)
+    return output.getvalue()
+
+
+def schedule_calendar_xlsx(template_bytes, assignments, start_day):
+    """Create an XLSX calendar when no original Excel template is available."""
+    return csv_workbook(
+        schedule_calendar_csv(template_bytes, assignments, start_day),
+        _month_sheet_name(start_day),
+    )
 
 
 def _month_sheet_name(day):
@@ -161,7 +195,7 @@ def update_schedule_workbook(workbook_file, assignments, start_day):
             return output.getvalue()
 
     written_days = set()
-    for sheet in workbook.worksheets:
+    for sheet in ([created_sheet] if created_sheet is not None else workbook.worksheets):
         values_sheet = values_workbook[sheet.title]
         for row in range(1, sheet.max_row + 1):
             for column in range(1, sheet.max_column + 1):

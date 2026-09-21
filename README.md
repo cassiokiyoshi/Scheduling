@@ -21,16 +21,22 @@ A local Streamlit app that turns employee availability into a hostel rota.
 ## Schedule export and existing workbook
 
 The included `2026 DEN shift - 26.09.csv` supplies the DEN calendar layout.
-From the Export tab, download the generated schedule as a calendar-style `.csv`
-named like `2026 DEN shift - 26.10.csv`.
+From the Export tab, download the generated schedule as a calendar-style `.xlsx`
+named like `2026 DEN shift - 26.10.xlsx`.
 
 Optionally upload a current `.xlsx` workbook before generation. The app reads its
 `front 10-19`, `Clean A`, `Clean B`, and `宿直(19-10)` cells to preserve existing
-assignments. The uploaded XLSX source is never overwritten and is not exported.
+assignments. The export updates a copy of the uploaded workbook, preserving its formulas and
+formatting outside the replaced schedule cells. The original is never overwritten.
+Without an uploaded workbook, the CSV layout is converted to XLSX; formulas
+already lost in the CSV cannot be recovered.
 
-## Availability CSV
+## Availability import (XLSX or CSV)
 
-Use `DEN shift availability.csv` as the canonical import example. It is a Google
+Download the Excel availability example in the app, or use
+`DEN shift availability.csv` as the canonical import example. XLSX imports use the
+first worksheet containing recognized availability headers. Formula input cells
+use their saved results; recalculate and save in Excel before importing. It is a Google
 Forms response export with a `MONTH` column, a `name` column, and daily columns
 named `[1日]`, `[2日]`, through `[31日]`. When an employee submits a correction for
 the same month, only their latest response is used.

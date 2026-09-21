@@ -1,12 +1,33 @@
 import unittest
 from datetime import date
-from io import StringIO
+from io import StringIO, BytesIO
+from openpyxl import Workbook
 
 from importer import parse_availability
 from scheduler import Availability
 
 
 class ImporterTests(unittest.TestCase):
+    def test_excel_dates_and_non_data_first_sheet(self):
+        book = Workbook()
+        book.active["A1"] = "Instructions"
+        sheet = book.create_sheet("Availability")
+        sheet.append(["Employee", "Date", "Position"])
+        sheet.append(["Alex", date(2026, 9, 1), "Front"])
+        source = BytesIO()
+        book.save(source)
+        self.assertEqual(parse_availability(source, date(2026, 9, 1)),
+                         [Availability("Alex", date(2026, 9, 1), "Front")])
+
+    def test_excel_form_layout(self):
+        book = Workbook()
+        book.active.append(["name", "MONTH", " [1日]"])
+        book.active.append(["Alex", "September", "F(10-19)"])
+        source = BytesIO()
+        book.save(source)
+        self.assertEqual({a.position for a in parse_availability(source, date(2026, 9, 1))},
+                         {"Front", "Cleaning"})
+
     def test_google_forms_grid_and_front_implies_cleaning(self):
         source = StringIO(
             "name,MONTH,Availability [1日],Availability [2日],How many shifts do you want?\n"

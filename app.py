@@ -8,8 +8,8 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from csv_export import schedule_calendar_csv
-from excel_export import read_schedule_workbook
+from excel_export import (read_schedule_workbook, update_schedule_workbook,
+                          schedule_calendar_xlsx, csv_workbook)
 from importer import parse_availability
 from scheduler import Assignment, MANAGER, generate_schedule, preserve_workbook_assignments
 
@@ -262,17 +262,17 @@ with st.sidebar:
         type="xlsx",
         help=(
             "Upload an XLSX workbook only when you want its existing assignments "
-            "preserved. The finished schedule is exported as CSV."
+            "preserved, along with its formulas and formatting in the XLSX export."
         ),
     )
-    availability_file = st.file_uploader("Availability CSV", type="csv")
-    with st.expander("CSV help"):
+    availability_file = st.file_uploader("Availability workbook", type=["xlsx", "csv"])
+    with st.expander("Import help"):
         if AVAILABILITY_TEMPLATE_PATH.exists():
             st.download_button(
                 "Download availability example",
-                AVAILABILITY_TEMPLATE_PATH.read_bytes(),
-                "DEN shift availability.csv",
-                mime="text/csv",
+                csv_workbook(AVAILABILITY_TEMPLATE_PATH.read_bytes(), "Availability"),
+                "DEN shift availability.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         st.caption(
             "Use the DEN Google Forms layout with MONTH, name, and daily columns "
@@ -286,13 +286,13 @@ st.markdown(
     '<div class="workflow-step"><b>1</b> Import availability</div>'
     '<div class="workflow-step"><b>2</b> Generate schedule</div>'
     '<div class="workflow-step"><b>3</b> Review assignments</div>'
-    '<div class="workflow-step"><b>4</b> Export CSV</div>'
+    '<div class="workflow-step"><b>4</b> Export Excel</div>'
     '</div>',
     unsafe_allow_html=True,
 )
 
 if availability_file is None:
-    st.info("Upload the availability CSV in the sidebar to start this month's schedule.")
+    st.info("Upload the availability XLSX or CSV in the sidebar to start this month's schedule.")
 elif end_day < start_day:
     st.error("The end date must be on or after the start date.")
 else:
@@ -365,27 +365,28 @@ else:
                         unsafe_allow_html=True,
                     )
         with tab_export:
-            csv_name = f"{start_day:%Y} DEN shift - {start_day:%y.%m}.csv"
-            if not CSV_TEMPLATE_PATH.exists():
-                st.info("The included DEN CSV template could not be found.")
-            else:
-                try:
-                    csv_content = schedule_calendar_csv(
+            xlsx_name = f"{start_day:%Y} DEN shift - {start_day:%y.%m}.xlsx"
+            try:
+                if schedule_workbook is not None:
+                    content = update_schedule_workbook(
+                        schedule_workbook, current_assignments, start_day
+                    )
+                else:
+                    content = schedule_calendar_xlsx(
                         CSV_TEMPLATE_PATH.read_bytes(), current_assignments, start_day
                     )
-                    st.download_button(
-                        "Download DEN schedule CSV",
-                        csv_content,
-                        csv_name,
-                        mime="text/csv",
-                        type="primary",
-                        use_container_width=True,
-                    )
-                    st.success("CSV ready in the DEN monthly calendar format.")
-                except ValueError as csv_error:
-                    st.warning(
-                        "The included CSV does not contain a recognizable DEN calendar. "
-                        f"Details: {csv_error}"
-                    )
+                st.download_button(
+                    "Download DEN schedule Excel",
+                    content,
+                    xlsx_name,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    type="primary",
+                    use_container_width=True,
+                )
+                st.success("Excel workbook ready in the DEN monthly calendar format.")
+                if schedule_workbook is None:
+                    st.caption("Upload the original XLSX workbook to retain its formulas and formatting.")
+            except (ValueError, OSError) as export_error:
+                st.warning(f"Could not export the Excel workbook: {export_error}")
     except Exception as error:
         st.error(f"Could not create the schedule: {error}")
