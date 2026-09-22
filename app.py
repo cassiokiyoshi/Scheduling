@@ -2,19 +2,21 @@ import base64
 from calendar import monthrange
 from datetime import date
 from html import escape
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from excel_export import (read_schedule_workbook, update_schedule_workbook,
-                          schedule_calendar_xlsx, csv_workbook)
-from importer import parse_availability
+from excel_export import (read_schedule_workbook, csv_workbook,
+                          reference_schedule_workbook)
+from importer import parse_availability, availability_employee_names
 from scheduler import Assignment, MANAGER, generate_schedule, preserve_workbook_assignments
 
 
 ICON_PATH = Path(__file__).parent / "assets" / "den-scheduler-icon.webp"
+REFERENCE_PATH = Path(__file__).parent / "assets" / "den-reference.xlsx"
 CSV_TEMPLATE_PATH = Path(__file__).parent / "2026 DEN shift - 26.09.csv"
 AVAILABILITY_TEMPLATE_PATH = Path(__file__).parent / "DEN shift availability.csv"
 ICON_DATA = base64.b64encode(ICON_PATH.read_bytes()).decode("ascii")
@@ -258,13 +260,14 @@ with st.sidebar:
     start_day = selected_month
     end_day = end_of_month(selected_month)
     schedule_workbook = st.file_uploader(
-        "Existing schedule workbook (optional)",
+        "Reference workbook (optional)",
         type="xlsx",
         help=(
-            "Upload an XLSX workbook only when you want its existing assignments "
-            "preserved, along with its formulas and formatting in the XLSX export."
+            "Defaults to the supplied 26.09 reference. Upload an XLSX with a 26.09 "
+            "sheet to use another copy of that layout."
         ),
     )
+    preserve_existing = st.checkbox("Preserve uploaded schedule assignments", value=False)
     availability_file = st.file_uploader("Availability workbook", type=["xlsx", "csv"])
     with st.expander("Import help"):
         if AVAILABILITY_TEMPLATE_PATH.exists():
@@ -302,7 +305,7 @@ else:
         assignments, _ = generate_schedule(days, availability)
         preserved_count = 0
         preserved = []
-        if schedule_workbook is not None:
+        if schedule_workbook is not None and preserve_existing:
             preserved = read_schedule_workbook(schedule_workbook, start_day, end_day)
             preserved_count = len(preserved)
             assignments = preserve_workbook_assignments(
@@ -367,14 +370,11 @@ else:
         with tab_export:
             xlsx_name = f"{start_day:%Y} DEN shift - {start_day:%y.%m}.xlsx"
             try:
-                if schedule_workbook is not None:
-                    content = update_schedule_workbook(
-                        schedule_workbook, current_assignments, start_day
-                    )
-                else:
-                    content = schedule_calendar_xlsx(
-                        CSV_TEMPLATE_PATH.read_bytes(), current_assignments, start_day
-                    )
+                reference = schedule_workbook or BytesIO(REFERENCE_PATH.read_bytes())
+                content = reference_schedule_workbook(
+                    reference, current_assignments, start_day,
+                    availability_employee_names(availability_file, start_day),
+                )
                 st.download_button(
                     "Download DEN schedule Excel",
                     content,
@@ -384,8 +384,7 @@ else:
                     use_container_width=True,
                 )
                 st.success("Excel workbook ready in the DEN monthly calendar format.")
-                if schedule_workbook is None:
-                    st.caption("Upload the original XLSX workbook to retain its formulas and formatting.")
+                st.caption("Uses the 26.09 layout. Employee totals and shift codes update in Excel; ZAC appears first in red.")
             except (ValueError, OSError) as export_error:
                 st.warning(f"Could not export the Excel workbook: {export_error}")
     except Exception as error:

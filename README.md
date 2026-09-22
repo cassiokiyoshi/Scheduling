@@ -20,16 +20,24 @@ A local Streamlit app that turns employee availability into a hostel rota.
 
 ## Schedule export and existing workbook
 
-The included `2026 DEN shift - 26.09.csv` supplies the DEN calendar layout.
-From the Export tab, download the generated schedule as a calendar-style `.xlsx`
-named like `2026 DEN shift - 26.10.xlsx`.
+The default export uses sheet `26.09` from `assets/den-reference.xlsx`, based on
+the supplied Excel reference. Downloads contain the selected month's sheet with
+the reference layout, cell styles, borders and dimensions. Old shifts and dated
+notes are cleared before inserting the generated schedule.
 
-Optionally upload a current `.xlsx` workbook before generation. The app reads its
-`front 10-19`, `Clean A`, `Clean B`, and `宿直(19-10)` cells to preserve existing
-assignments. The export updates a copy of the uploaded workbook, preserving its formulas and
-formatting outside the replaced schedule cells. The original is never overwritten.
-Without an uploaded workbook, the CSV layout is converted to XLSX; formulas
-already lost in the CSV cannot be recovered.
+Column L (rows 8–28) lists ZAC first, followed by employees from the imported
+availability and schedule. ZAC has red cells with white text; other employee
+cells are neutral. Column K calculates assigned role combinations in C/F/N order.
+Front, Cleaning and Night counts cover all six weekly blocks, including helper
+rows. Total, free-stay and remaining-stay formulas extend through row 28. Old
+employee notes and used-stay balances are cleared; enter current used stays in S.
+ZAC retains the reference's exemption from free-stay calculations.
+
+Upload another reference workbook containing `26.09` to override the default.
+Existing assignments are imported only when “Preserve uploaded schedule
+assignments” is checked. Original files are never overwritten. Excel recalculates
+formulas when the exported workbook opens. More than 20 employees plus ZAC
+requires extending the roster area; export reports this instead of dropping names.
 
 ## Availability import (XLSX or CSV)
 

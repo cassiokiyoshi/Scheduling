@@ -79,6 +79,24 @@ def _month_number(value):
     return next((index for index, name in enumerate(names, start=1) if name in text), None)
 
 
+def availability_employee_names(uploaded_file, schedule_start):
+    """Include named respondents even when they have no available shifts."""
+    names = {}
+    for row in _read_rows(uploaded_file):
+        normalized = {key.strip().casefold(): value for key, value in row.items()}
+        month = _month_number(normalized.get("month"))
+        if month is not None and month != schedule_start.month:
+            continue
+        if "date" in normalized:
+            day = _parse_date(normalized["date"])
+            if (day.year, day.month) != (schedule_start.year, schedule_start.month):
+                continue
+        name = str(normalized.get("name") or normalized.get("employee") or "").strip()
+        if name:
+            names.setdefault(name.casefold(), name)
+    return list(names.values())
+
+
 def _parse_date(value):
     if isinstance(value, datetime):
         return value.date()
