@@ -33,9 +33,8 @@ rows. Total, free-stay and remaining-stay formulas extend through row 28. Old
 employee notes and used-stay balances are cleared; enter current used stays in S.
 ZAC retains the reference's exemption from free-stay calculations.
 
-Upload another reference workbook containing `26.09` to override the default.
-Existing assignments are imported only when “Preserve uploaded schedule
-assignments” is checked. Original files are never overwritten. Excel recalculates
+Exports always use the built-in reference; only availability needs to be uploaded.
+Original files are never overwritten. Excel recalculates
 formulas when the exported workbook opens. More than 20 employees plus ZAC
 requires extending the roster area; export reports this instead of dropping names.
 

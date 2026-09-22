@@ -5,3 +5,6 @@ __pycache__/
 .den_scheduler/
 credentials.json
 token.json
+
+# Recreated by the macOS build script
+packaging/DEN.iconset/

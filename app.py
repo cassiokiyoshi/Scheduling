@@ -9,15 +9,13 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
-from excel_export import (read_schedule_workbook, csv_workbook,
-                          reference_schedule_workbook)
+from excel_export import csv_workbook, reference_schedule_workbook
 from importer import parse_availability, availability_employee_names
-from scheduler import Assignment, MANAGER, generate_schedule, preserve_workbook_assignments
+from scheduler import Assignment, MANAGER, generate_schedule
 
 
 ICON_PATH = Path(__file__).parent / "assets" / "den-scheduler-icon.webp"
 REFERENCE_PATH = Path(__file__).parent / "assets" / "den-reference.xlsx"
-CSV_TEMPLATE_PATH = Path(__file__).parent / "2026 DEN shift - 26.09.csv"
 AVAILABILITY_TEMPLATE_PATH = Path(__file__).parent / "DEN shift availability.csv"
 ICON_DATA = base64.b64encode(ICON_PATH.read_bytes()).decode("ascii")
 st.set_page_config(page_title="DEN Scheduler", page_icon=Image.open(ICON_PATH), layout="wide")
@@ -259,15 +257,6 @@ with st.sidebar:
     )
     start_day = selected_month
     end_day = end_of_month(selected_month)
-    schedule_workbook = st.file_uploader(
-        "Reference workbook (optional)",
-        type="xlsx",
-        help=(
-            "Defaults to the supplied 26.09 reference. Upload an XLSX with a 26.09 "
-            "sheet to use another copy of that layout."
-        ),
-    )
-    preserve_existing = st.checkbox("Preserve uploaded schedule assignments", value=False)
     availability_file = st.file_uploader("Availability workbook", type=["xlsx", "csv"])
     with st.expander("Import help"):
         if AVAILABILITY_TEMPLATE_PATH.exists():
@@ -281,7 +270,7 @@ with st.sidebar:
             "Use the DEN Google Forms layout with MONTH, name, and daily columns "
             "such as [1日], [2日], and [3日]."
         )
-    st.markdown('<div class="local">Files are processed locally. The uploaded workbook is never overwritten.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="local">Files are processed locally. Your availability file is never overwritten.</div>', unsafe_allow_html=True)
 
 st.markdown(
     '<div class="page-intro">Build and review the monthly hostel schedule</div>'
@@ -303,20 +292,11 @@ else:
         availability = parse_availability(availability_file, start_day)
         days = list(pd.date_range(start_day, end_day).date)
         assignments, _ = generate_schedule(days, availability)
-        preserved_count = 0
-        preserved = []
-        if schedule_workbook is not None and preserve_existing:
-            preserved = read_schedule_workbook(schedule_workbook, start_day, end_day)
-            preserved_count = len(preserved)
-            assignments = preserve_workbook_assignments(
-                days, availability, assignments, preserved
-            )
         slots = assignment_slots(days, assignments, availability)
         signature = (
             start_day,
             end_day,
             tuple(sorted((item.employee, item.day, item.position) for item in availability)),
-            tuple(sorted((item.employee, item.day, item.position) for item in preserved)),
         )
         initialize_assignment_state(slots, signature)
         current_assignments = selected_assignments(slots)
@@ -332,8 +312,6 @@ else:
         tab_calendar, tab_workload, tab_export = st.tabs(["Calendar", "Workload", "Export"])
         with tab_calendar:
             st.caption("Click an assigned name to choose another worker who is available for that shift.")
-            if preserved_count:
-                st.info(f"Preserved {preserved_count} existing assignments from the uploaded workbook.")
             render_interactive_calendar(days, slots)
             st.caption("Light red means no cleaner is assigned. Light yellow means only one cleaner is assigned.")
         current_assignments = selected_assignments(slots)
@@ -370,7 +348,7 @@ else:
         with tab_export:
             xlsx_name = f"{start_day:%Y} DEN shift - {start_day:%y.%m}.xlsx"
             try:
-                reference = schedule_workbook or BytesIO(REFERENCE_PATH.read_bytes())
+                reference = BytesIO(REFERENCE_PATH.read_bytes())
                 content = reference_schedule_workbook(
                     reference, current_assignments, start_day,
                     availability_employee_names(availability_file, start_day),

@@ -24,9 +24,9 @@ done
 # depend on sibling files in a particular folder layout.
 PROJECT_RESOURCES="$APP_PATH/Contents/Resources/project"
 /bin/mkdir -p "$PROJECT_RESOURCES/assets" "$PROJECT_RESOURCES/.streamlit"
-/bin/cp "$PROJECT_DIR/app.py" "$PROJECT_DIR/scheduler.py" "$PROJECT_DIR/importer.py" "$PROJECT_DIR/excel_export.py" "$PROJECT_DIR/csv_export.py" "$PROJECT_DIR/requirements.txt" "$PROJECT_RESOURCES/"
-/bin/cp "$PROJECT_DIR/2026 DEN shift - 26.09.csv" "$PROJECT_RESOURCES/"
+/bin/cp "$PROJECT_DIR/app.py" "$PROJECT_DIR/scheduler.py" "$PROJECT_DIR/importer.py" "$PROJECT_DIR/excel_export.py" "$PROJECT_DIR/requirements.txt" "$PROJECT_RESOURCES/"
 /bin/cp "$PROJECT_DIR/DEN shift availability.csv" "$PROJECT_RESOURCES/"
+/bin/cp "$PROJECT_DIR/assets/den-reference.xlsx" "$PROJECT_RESOURCES/assets/"
 /bin/cp "$PROJECT_DIR/assets/den-scheduler-icon.webp" "$PROJECT_DIR/assets/den-scheduler-icon.png" "$PROJECT_RESOURCES/assets/"
 /bin/cp "$PROJECT_DIR/.streamlit/config.toml" "$PROJECT_RESOURCES/.streamlit/config.toml"
 /usr/bin/touch "$APP_PATH"
