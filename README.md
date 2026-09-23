@@ -18,7 +18,7 @@ A local Streamlit app that turns employee availability into a hostel rota.
 - The app automatically selects at most two cleaners. A third can be added in the
   editable schedule.
 
-## Schedule export and existing workbook
+## Excel schedule export
 
 The default export uses sheet `26.09` from `assets/den-reference.xlsx`, based on
 the supplied Excel reference. Downloads contain the selected month's sheet with
@@ -27,7 +27,8 @@ notes are cleared before inserting the generated schedule.
 
 Column L (rows 8–28) lists ZAC first, followed by employees from the imported
 availability and schedule. ZAC has red cells with white text; other employee
-cells are neutral. Column K calculates assigned role combinations in C/F/N order.
+cells are neutral. All employee cells have matching thin black borders on all
+four sides, including empty slots and the employee list through row 28. Column K calculates assigned role combinations in C/F/N order.
 Front, Cleaning and Night counts cover all six weekly blocks, including helper
 rows. Total, free-stay and remaining-stay formulas extend through row 28. Old
 employee notes and used-stay balances are cleared; enter current used stays in S.
@@ -83,17 +84,57 @@ After completing installation once, macOS users can double-click
 `Start DEN Scheduler.bat`. Keep the launcher inside the project folder so it
 can locate `app.py` and `.venv` after the folder is moved.
 
-### macOS app launcher
+## Standalone macOS app
 
-`DEN Scheduler.app` is the preferred launcher for non-technical users. Keep it
-inside the project folder, next to `app.py`. It starts Streamlit without showing
-a Terminal window and opens `http://localhost:8501` in the default browser.
+### Open or share the app
 
-To rebuild the launcher or refresh its icon on macOS:
+1. Give the recipient `dist/DEN Scheduler.zip` (about 74 MB).
+2. Unzip it and move `DEN Scheduler.app` to Applications or another folder.
+3. Double-click the app. Allow up to a minute for the bundled runtime to unpack;
+   the scheduler opens in the default browser.
+4. Select a month, upload availability as XLSX or CSV, review assignments, and
+   download the Excel schedule. The reference template is already included.
+5. Quit DEN Scheduler from its Dock menu when finished to stop the local server.
+   Closing the browser tab alone does not stop the app.
+
+Python, runtime dependencies, and the Excel template are included. The recipient
+needs no Python installation, project folder, or internet connection to run it.
+The server listens only on this computer and chooses an available local port.
+
+### Compatibility and troubleshooting
+
+- The current build is for **Apple Silicon Macs (M1 and newer)**. Intel Macs and
+  Windows require separate builds; this package is not universal.
+- Startup, the local server, and Excel export were verified on the build Mac.
+  Other macOS versions have not been tested.
+- The app is locally ad-hoc signed, not Apple-notarized. Another Mac may require
+  approval in macOS security settings before opening it.
+- If startup fails, inspect `~/Library/Logs/DEN Scheduler/standalone.log`.
+
+### Build from source
+
+First install the development environment using the “Run locally” instructions.
+Then run on macOS with Apple command-line tools available:
 
 ```bash
-chmod +x packaging/build-macos-app.sh
+.venv/bin/python -m pip install 'pyinstaller>=6,<7'
 ./packaging/build-macos-app.sh
+```
+
+The script bundles the runtime with PyInstaller, compiles the macOS launcher,
+adds the icon and Excel reference, signs the app locally, and produces:
+
+- `dist/DEN Scheduler.app` — the standalone application bundle.
+- `dist/DEN Scheduler.zip` — the single-file archive for sharing.
+
+`build/` and `dist/` are generated and excluded from Git. Cloning the repository
+provides the source and build scripts; build the app locally or obtain the ZIP
+separately. Rebuild after source or template changes to include them in the app.
+
+To check the packaged runtime and Excel export without opening the browser:
+
+```bash
+"dist/DEN Scheduler.app/Contents/Resources/den-scheduler" --self-test
 ```
 
 ## Test

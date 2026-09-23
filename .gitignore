@@ -8,3 +8,7 @@ token.json
 
 # Recreated by the macOS build script
 packaging/DEN.iconset/
+
+# Standalone build outputs
+build/
+dist/
