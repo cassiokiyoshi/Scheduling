@@ -11,7 +11,7 @@ from PIL import Image
 
 from excel_export import csv_workbook, reference_schedule_workbook
 from importer import parse_availability, availability_employee_names
-from scheduler import Assignment, MANAGER, generate_schedule
+from scheduler import Assignment, MANAGER, generate_schedule, consecutive_shift_keys
 
 
 ICON_PATH = Path(__file__).parent / "assets" / "den-scheduler-icon.webp"
@@ -144,6 +144,7 @@ def selected_assignments(slots):
 
 
 def render_interactive_calendar(days, slots):
+    consecutive = consecutive_shift_keys(selected_assignments(slots))
     slots_by_day = {}
     for slot in slots:
         slots_by_day.setdefault(slot["day"], []).append(slot)
@@ -164,6 +165,8 @@ def render_interactive_calendar(days, slots):
             if slot["position"] == "Cleaning" and st.session_state[slot["key"]]
         ]
         day_color = "#fdebec" if not cleaners else ("#fff7dc" if len(cleaners) == 1 else "#ffffff")
+        if any(key[0] == day for key in consecutive):
+            day_color = "#dbeafe"
         styles.append(
             f'.st-key-day_{day:%Y_%m_%d},'
             f'.st-key-day_{day:%Y_%m_%d}[data-testid="stVerticalBlockBorderWrapper"],'
@@ -179,6 +182,8 @@ def render_interactive_calendar(days, slots):
             }[slot["position"]]
             if current == MANAGER:
                 color = "#fff0e3"
+            if (day, slot["position"], current) in consecutive:
+                color = "#bfdbfe"
             styles.append(
                 f'.st-key-{slot["key"]} div[data-baseweb="select"]>div'
                 f'{{background:{color}!important}}'
@@ -313,7 +318,7 @@ else:
         with tab_calendar:
             st.caption("Click an assigned name to choose another worker who is available for that shift.")
             render_interactive_calendar(days, slots)
-            st.caption("Light red means no cleaner is assigned. Light yellow means only one cleaner is assigned.")
+            st.caption("Blue marks same-day double shifts or Night followed by Front/Cleaning the next day. Otherwise, light red means no cleaner and light yellow means one cleaner.")
         current_assignments = selected_assignments(slots)
         edited = schedule_frame(current_assignments)
         with tab_workload:

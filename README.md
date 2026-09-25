@@ -11,7 +11,14 @@ A local Streamlit app that turns employee availability into a hostel rota.
 - A Night shift belongs to the date on which it starts.
 - A person receives at most one shift starting on the same date.
 - Mandatory Night and Front roles are filled before Cleaning.
-- Assignments are balanced by giving preference to people with fewer shifts.
+- Front, Cleaning and Night assignments are balanced separately among available
+  employees. Coverage and rest constraints take priority over exact equality.
+- Avoid Night followed by Front or Cleaning the next day when another eligible
+  employee can cover. Same-day double shifts are also treated as conflicts.
+- ZAC is exempt from these rest rules and the employee workload balancing.
+- Blue calendar cards and employee selectors mark consecutive-shift conflicts,
+  including manual edits. Ordinary work on consecutive dates is not highlighted.
+  If no suitable alternative is found, coverage is kept and the conflict is shown.
 - Manager receives at least 21 Front or Night shifts per month. For a shorter
   selected date range with fewer than 21 required shifts, all available required
   shifts are assigned to the Manager.

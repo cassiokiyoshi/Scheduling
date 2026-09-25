@@ -7,11 +7,52 @@ from scheduler import (
     Assignment,
     Availability,
     generate_schedule,
+    consecutive_shift_keys,
+    _improve_rest,
+    _balance_shift_types,
     preserve_workbook_assignments,
 )
 
 
 class SchedulerTests(unittest.TestCase):
+    def test_rest_rules_and_manager_exemption(self):
+        first, second = date(2026, 9, 1), date(2026, 9, 2)
+        assignments = [Assignment(first, "Night", "A"),
+                       Assignment(second, "Cleaning", "A"),
+                       Assignment(first, "Front", MANAGER),
+                       Assignment(first, "Night", MANAGER),
+                       Assignment(second, "Front", MANAGER)]
+        keys = consecutive_shift_keys(assignments)
+        self.assertEqual(keys, {(first, "Night", "A"), (second, "Cleaning", "A")})
+        available = {(second, "Cleaning"): ["A", "B"], (first, "Night"): ["A"]}
+        result = _improve_rest(assignments, available)
+        self.assertFalse(consecutive_shift_keys(result))
+        self.assertEqual(result[1].employee, "B")
+
+    def test_unavoidable_rest_conflict_remains_visible(self):
+        first, second = date(2026, 9, 1), date(2026, 9, 2)
+        assignments = [Assignment(first, "Night", "A"), Assignment(second, "Cleaning", "A")]
+        result = _improve_rest(assignments, {(first, "Night"): ["A"], (second, "Cleaning"): ["A"]})
+        self.assertEqual(result, assignments)
+        self.assertEqual(len(consecutive_shift_keys(result)), 2)
+
+    def test_same_day_front_night_is_flagged_but_normal_days_are_not(self):
+        first, second = date(2026, 9, 1), date(2026, 9, 2)
+        self.assertEqual(len(consecutive_shift_keys([
+            Assignment(first, "Front", "A"), Assignment(first, "Night", "A")])), 2)
+        self.assertFalse(consecutive_shift_keys([
+            Assignment(first, "Front", "A"), Assignment(second, "Front", "A")]))
+
+    def test_role_balancing_respects_availability_and_rest(self):
+        days = [date(2026, 9, day) for day in range(1, 7)]
+        for position in ("Front", "Cleaning", "Night"):
+            assignments = [Assignment(day, position, "A") for day in days]
+            available = {(day, position): ["A", "B"] for day in days}
+            result = _balance_shift_types(assignments, available)
+            self.assertEqual(sum(a.employee == "A" for a in result), 3)
+            self.assertEqual(sum(a.employee == "B" for a in result), 3)
+            self.assertFalse(consecutive_shift_keys(result))
+
     def test_manager_covers_required_positions(self):
         day = date(2026, 9, 1)
         assignments, _ = generate_schedule([day], [])
