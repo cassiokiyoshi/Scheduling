@@ -41,6 +41,7 @@ class ExcelExportTests(unittest.TestCase):
             self.assertIn('$B$55:$H$55', sheet[f'P{row}'].value)
         self.assertIsNone(sheet['Q10'].value)
         self.assertIsNone(sheet['S20'].value)
+        self.assertEqual(sheet['V8'].value, '=N8*8+P8*6')
         self.assertTrue(book.calculation.fullCalcOnLoad)
 
 

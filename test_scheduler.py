@@ -3,7 +3,8 @@ from datetime import date
 
 from scheduler import (
     MANAGER,
-    MANAGER_MIN_MONTHLY_SHIFTS,
+    MANAGER_TARGET_HOURS,
+    manager_hours,
     Assignment,
     Availability,
     generate_schedule,
@@ -53,6 +54,17 @@ class SchedulerTests(unittest.TestCase):
             self.assertEqual(sum(a.employee == "B" for a in result), 3)
             self.assertFalse(consecutive_shift_keys(result))
 
+    def test_night_hours_reduce_required_front_shifts(self):
+        days = [date(2026, 9, day) for day in range(1, 31)]
+        for nights, expected_front in [(0, 19), (1, 19), (2, 18), (3, 17), (4, 16), (26, 0)]:
+            with self.subTest(nights=nights):
+                availability = [Availability("Front worker", day, "Front") for day in days]
+                availability += [Availability("Night worker", day, "Night") for day in days[nights:]]
+                assignments, _ = generate_schedule(days, availability)
+                self.assertEqual(sum(a.employee == MANAGER and a.position == "Front" for a in assignments), expected_front)
+                self.assertEqual(sum(a.employee == MANAGER and a.position == "Night" for a in assignments), nights)
+                self.assertGreaterEqual(manager_hours(assignments), 152)
+
     def test_manager_covers_required_positions(self):
         day = date(2026, 9, 1)
         assignments, _ = generate_schedule([day], [])
@@ -95,7 +107,7 @@ class SchedulerTests(unittest.TestCase):
         assignments, counts = generate_schedule(days, availability)
 
         manager_shifts = [item for item in assignments if item.employee == MANAGER]
-        self.assertEqual(len(manager_shifts), MANAGER_MIN_MONTHLY_SHIFTS)
+        self.assertEqual(manager_hours(manager_shifts), MANAGER_TARGET_HOURS)
         self.assertLessEqual(max(counts.values()) - min(counts.values()), 1)
 
     def test_manager_substitution_backfills_cleaning(self):

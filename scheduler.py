@@ -7,7 +7,8 @@ from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
 POSITIONS = ("Front", "Cleaning", "Night")
 MANAGER = "Zac"
-MANAGER_MIN_MONTHLY_SHIFTS = 21
+MANAGER_TARGET_HOURS = 152
+MANAGER_SHIFT_HOURS = {"Front": 8, "Night": 6}
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,11 @@ class Assignment:
     position: str
     employee: str
     source: str = "Automatic"
+
+
+def manager_hours(assignments):
+    return sum(MANAGER_SHIFT_HOURS.get(item.position, 0) for item in assignments
+               if item.employee.casefold() == MANAGER.casefold())
 
 
 def _choose(candidates: Iterable[str], counts: Mapping[str, int]) -> List[str]:
@@ -186,25 +192,22 @@ def generate_schedule(
             used_today.add(chosen)
             counts[chosen] = counts.get(chosen, 0) + 1
 
-    # Manager fallback cover may not reach their monthly minimum when employee
-    # availability is high. Replace required-role assignments held by the most
-    # heavily scheduled employees until the minimum is met. Short date ranges
-    # with fewer than 21 required shifts simply assign every available one.
-    manager_count = sum(item.employee == MANAGER for item in assignments)
-    while manager_count < MANAGER_MIN_MONTHLY_SHIFTS:
+    # Night fallback cover counts toward ZAC's target; top up with Front first.
+    hours = manager_hours(assignments)
+    while hours < MANAGER_TARGET_HOURS:
         replaceable = [
             (index, item)
             for index, item in enumerate(assignments)
-            if item.position in ("Night", "Front") and item.employee != MANAGER
+            if item.position in MANAGER_SHIFT_HOURS and item.employee != MANAGER
         ]
         if not replaceable:
             break
         index, item = min(
             replaceable,
             key=lambda pair: (
+                pair[1].position != "Front",
                 -counts.get(pair[1].employee, 0),
                 pair[1].day,
-                pair[1].position,
                 pair[1].employee.casefold(),
             ),
         )
@@ -212,7 +215,7 @@ def generate_schedule(
         counts[item.employee] -= 1
         if counts[item.employee] == 0:
             del counts[item.employee]
-        manager_count += 1
+        hours += MANAGER_SHIFT_HOURS[item.position]
 
     # Refill Cleaning after manager substitutions. A substitution can free a
     # Front-qualified employee who is also eligible for Cleaning.

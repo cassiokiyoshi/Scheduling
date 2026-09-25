@@ -11,7 +11,7 @@ from PIL import Image
 
 from excel_export import csv_workbook, reference_schedule_workbook
 from importer import parse_availability, availability_employee_names
-from scheduler import Assignment, MANAGER, generate_schedule, consecutive_shift_keys
+from scheduler import Assignment, MANAGER, generate_schedule, consecutive_shift_keys, manager_hours, MANAGER_TARGET_HOURS
 
 
 ICON_PATH = Path(__file__).parent / "assets" / "den-scheduler-icon.webp"
@@ -307,11 +307,10 @@ else:
         current_assignments = selected_assignments(slots)
         frame = schedule_frame(current_assignments)
         st.markdown(f'<div class="heading">Review schedule</div><div class="copy">{start_day:%d %B %Y} – {end_day:%d %B %Y} · {len(set(a.employee for a in availability))} employees</div>', unsafe_allow_html=True)
-        manager_count = int((frame["Employee"] == MANAGER).sum())
         cleaning_days = set(frame.loc[frame["Position"] == "Cleaning", "Date"])
         m1, m2, m3 = st.columns(3)
         m1.metric("Days scheduled", len(days))
-        m2.metric("Manager cover", manager_count)
+        m2.metric("ZAC hours", f"{manager_hours(current_assignments)} / {MANAGER_TARGET_HOURS}")
         m3.metric("Cleaning shortages", len(set(days) - cleaning_days))
 
         tab_calendar, tab_workload, tab_export = st.tabs(["Calendar", "Workload", "Export"])

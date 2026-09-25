@@ -19,9 +19,11 @@ A local Streamlit app that turns employee availability into a hostel rota.
 - Blue calendar cards and employee selectors mark consecutive-shift conflicts,
   including manual edits. Ordinary work on consecutive dates is not highlighted.
   If no suitable alternative is found, coverage is kept and the conflict is shown.
-- Manager receives at least 21 Front or Night shifts per month. For a shorter
-  selected date range with fewer than 21 required shifts, all available required
-  shifts are assigned to the Manager.
+- ZAC targets at least 152 hours per month: Front counts as 8 hours and Night
+  as 6. Night coverage reduces required Front shifts: `ceil((152 - 6 × nights) / 8)`,
+  with a minimum of zero. With no nights he needs 19 Front shifts; 2 nights need
+  18 Front shifts, 3 nights need 17, and 4 nights need 16. Coverage shortages may
+  require extra hours. Short ranges may not contain enough shifts to reach 152.
 - The app automatically selects at most two cleaners. A third can be added in the
   editable schedule.
 

@@ -95,7 +95,7 @@ def reference_schedule_workbook(workbook_file, assignments, start_day, employee_
         sheet.cell(row, 13, f'=IF(L{row}="","",SUM(N{row}:P{row}))')
         sheet.cell(row, 18, '-' if row == 8 else f'=IF(L{row}="","",QUOTIENT(M{row},4))')
         sheet.cell(row, 20, '-' if row == 8 else f'=IF(L{row}="","",R{row}-S{row})')
-    sheet['V8'] = '=N8*8+O8*5+P8*7'
+    sheet['V8'] = '=N8*8+P8*6'
     workbook.calculation = CalcProperties(calcId=0, fullCalcOnLoad=True, forceFullCalc=True)
     workbook.active = 0
     output = BytesIO()
